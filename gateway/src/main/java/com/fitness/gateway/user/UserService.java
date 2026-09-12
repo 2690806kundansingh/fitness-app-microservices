@@ -23,12 +23,9 @@ public class UserService {
                     .uri("/api/users/{userId}/validate", userId)
                     .retrieve()
                     .bodyToMono(Boolean.class)
-                    .onErrorResume(WebClientResponseException.class, e -> {
-                        if (e.getStatusCode() == HttpStatus.NOT_FOUND)
-                            return Mono.error(new RuntimeException("User Not Found: " + userId));
-                        else if (e.getStatusCode() == HttpStatus.BAD_REQUEST)
-                            return Mono.error(new RuntimeException("Invalid Request: " + userId));
-                        return Mono.error(new RuntimeException("Unexpected error: " + e.getMessage()));
+                    .onErrorResume(Exception.class, e -> {
+                        log.warn("User validation returned error or user not found, returning false: {}", e.getMessage());
+                        return Mono.just(false);
                     });
         }
 

@@ -3,7 +3,13 @@ spring:
     name: api-gateway
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:https://keycloak-production-abf4.up.railway.app/realms/fitness-oauth2/protocol/openid-connect/certs}
 
 server:
   port: ${GATEWAY_PORT:8085}
+
 
