@@ -3,13 +3,14 @@ spring:
     name: activity-service
   data:
     mongodb:
-      uri: mongodb://localhost:27017/fitnessactivity
-      database: fitnessactivity
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://chandansingh2690806_db_user:BnQRc4d4PMStr8Y9@cluster0.ppibygv.mongodb.net/fitnessactivity?retryWrites=true&w=majority&appName=Cluster0}
+      database: ${SPRING_DATA_MONGODB_DATABASE:fitnessactivity}
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
+    host: ${SPRING_RABBITMQ_HOST:cow.rmq2.cloudamqp.com}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:rbjaxfia}
+    password: ${SPRING_RABBITMQ_PASSWORD:RV2N6SeR9YJbupg65d5v7nr5TasPYjFM}
+    virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:rbjaxfia}
 
 server:
   port: 8082
@@ -17,7 +18,7 @@ server:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
 
 rabbitmq:
   exchange:

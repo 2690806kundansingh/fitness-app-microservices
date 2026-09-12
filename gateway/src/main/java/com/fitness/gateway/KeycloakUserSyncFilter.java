@@ -4,8 +4,8 @@ import com.fitness.gateway.user.RegisterRequest;
 import com.fitness.gateway.user.UserService;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -14,10 +14,13 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 @Component
-@Slf4j
-@RequiredArgsConstructor
 public class KeycloakUserSyncFilter implements WebFilter {
+    private static final Logger log = LoggerFactory.getLogger(KeycloakUserSyncFilter.class);
     private final UserService userService;
+
+    public KeycloakUserSyncFilter(UserService userService) {
+        this.userService = userService;
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {

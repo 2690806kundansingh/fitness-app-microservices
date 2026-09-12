@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="2. ConfigserverApplication" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.fitness.configserver.ConfigserverApplication" />
+    <module name="configserver" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

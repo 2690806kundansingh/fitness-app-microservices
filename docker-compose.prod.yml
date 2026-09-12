@@ -1,0 +1,180 @@
+services:
+  # --------------------------------------------------
+  # INFRASTRUCTURE SERVICES
+  # --------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.1
+    container_name: fitness-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8181:8080"
+    volumes:
+      - ./keycloak/fitness-oauth2-realm.json:/opt/keycloak/data/import/fitness-oauth2-realm.json:ro
+    networks:
+      - fitness-net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: fitness-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - fitness-net
+
+  mongodb:
+    image: mongo:6.0
+    container_name: fitness-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - fitness-net
+
+  # --------------------------------------------------
+  # SPRING CLOUD BACKBONE
+  # --------------------------------------------------
+  eureka:
+    build:
+      context: ./eureka
+      dockerfile: Dockerfile
+    container_name: fitness-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      - SERVER_PORT=8761
+    networks:
+      - fitness-net
+
+  configserver:
+    build:
+      context: ./configserver
+      dockerfile: Dockerfile
+    container_name: fitness-configserver
+    ports:
+      - "8888:8888"
+    environment:
+      - SERVER_PORT=8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+    depends_on:
+      - eureka
+    networks:
+      - fitness-net
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: fitness-gateway
+    ports:
+      - "8085:8085"
+    environment:
+      - GATEWAY_PORT=8085
+      - CONFIG_SERVER_URL=http://configserver:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - JWK_SET_URI=http://keycloak:8080/realms/fitness-oauth2/protocol/openid-connect/certs
+    depends_on:
+      - eureka
+      - configserver
+      - keycloak
+    networks:
+      - fitness-net
+
+  # --------------------------------------------------
+  # BUSINESS MICROSERVICES
+  # --------------------------------------------------
+  userservice:
+    build:
+      context: ./userservice
+      dockerfile: Dockerfile
+    container_name: fitness-userservice
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - CONFIG_SERVER_URL=http://configserver:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+    depends_on:
+      - eureka
+      - configserver
+    networks:
+      - fitness-net
+
+  activityservice:
+    build:
+      context: ./activityservice
+      dockerfile: Dockerfile
+    container_name: fitness-activityservice
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - CONFIG_SERVER_URL=http://configserver:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://chandansingh2690806_db_user:BnQRc4d4PMStr8Y9@cluster0.ppibygv.mongodb.net/fitnessactivity?retryWrites=true&w=majority&appName=Cluster0
+      - SPRING_RABBITMQ_HOST=cow.rmq2.cloudamqp.com
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=rbjaxfia
+      - SPRING_RABBITMQ_PASSWORD=RV2N6SeR9YJbupg65d5v7nr5TasPYjFM
+      - SPRING_RABBITMQ_VIRTUAL_HOST=rbjaxfia
+    depends_on:
+      - eureka
+      - configserver
+    networks:
+      - fitness-net
+
+  aiservice:
+    build:
+      context: ./aiservice
+      dockerfile: Dockerfile
+    container_name: fitness-aiservice
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - CONFIG_SERVER_URL=http://configserver:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://chandansingh2690806_db_user:BnQRc4d4PMStr8Y9@cluster0.ppibygv.mongodb.net/fitnessrecommendation?retryWrites=true&w=majority&appName=Cluster0
+      - SPRING_RABBITMQ_HOST=cow.rmq2.cloudamqp.com
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=rbjaxfia
+      - SPRING_RABBITMQ_PASSWORD=RV2N6SeR9YJbupg65d5v7nr5TasPYjFM
+      - SPRING_RABBITMQ_VIRTUAL_HOST=rbjaxfia
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      - eureka
+      - configserver
+      - mongodb
+      - rabbitmq
+    networks:
+      - fitness-net
+
+  # --------------------------------------------------
+  # FRONTEND (VITE REACT + NGINX)
+  # --------------------------------------------------
+  frontend:
+    build:
+      context: ./fitness-app-frontend
+      dockerfile: Dockerfile
+    container_name: fitness-frontend
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      - gateway
+    networks:
+      - fitness-net
+
+networks:
+  fitness-net:
+    driver: bridge
+
+volumes:
+  mongo-data:

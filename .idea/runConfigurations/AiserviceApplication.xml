@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="6. AiserviceApplication" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.fitness.aiservice.AiserviceApplication" />
+    <module name="aiservice" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

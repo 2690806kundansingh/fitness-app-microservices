@@ -5,7 +5,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8181/realms/fitness-oauth2/protocol/openid-connect/certs
+          jwk-set-uri: ${JWK_SET_URI:https://keycloak-production-abf4.up.railway.app/realms/fitness-oauth2/protocol/openid-connect/certs}
   cloud:
     gateway:
       routes:
@@ -25,9 +25,9 @@ spring:
             - Path=/api/recommendations/**
 
 server:
-  port: 8080
+  port: ${GATEWAY_PORT:8085}
 
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}

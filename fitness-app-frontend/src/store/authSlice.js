@@ -5,17 +5,30 @@ const authSlice = createSlice({
   initialState : {
     user: JSON.parse(localStorage.getItem('user')) || null,
     token: localStorage.getItem('token') || null,
-    userId: localStorage.getItem('userId') | null
+    userId: localStorage.getItem('userId') || null
   },
   reducers: {
     setCredentials: (state, action) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.userId = action.payload.user.sub;
+      const user = action.payload.user;
+      const token = action.payload.token;
+      let userId = user?.sub || user?.id || null;
 
-      localStorage.setItem('token', action.payload.token);
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
-      localStorage.setItem('userId', action.payload.user.sub);
+      if (!userId && token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userId = payload.sub || payload.id || null;
+        } catch {
+          // ignore token parse error
+        }
+      }
+
+      state.user = user;
+      state.token = token;
+      state.userId = userId;
+
+      if (token) localStorage.setItem('token', token);
+      if (user) localStorage.setItem('user', JSON.stringify(user));
+      if (userId) localStorage.setItem('userId', userId);
     },
     logout: (state) => {
       state.user = null;
