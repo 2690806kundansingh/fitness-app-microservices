@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8085/api';
+const defaultApiUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? 'https://patient-procedures-nutrition-retirement.trycloudflare.com/api'
+    : 'http://localhost:8085/api';
+
+const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 
 const api = axios.create({
     baseURL: API_URL

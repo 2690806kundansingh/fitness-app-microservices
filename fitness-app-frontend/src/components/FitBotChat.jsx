@@ -16,10 +16,10 @@ import {
 import { clearBotChat, getBotChatHistory, sendBotMessage } from '../services/api';
 
 const QUICK_PROMPTS = [
-  'How is my daily progress today?',
-  'Suggest a 25 min aerobic workout',
-  'What should I eat after training?',
-  'How can I recover from sore legs?'
+  'Bhai aaj ka best workout plan batao! 🔥',
+  'Post-workout diet kya lu? 🥗',
+  'How is my daily progress today? 📈',
+  'Sore muscles ke liye fast recovery tips ⚡'
 ];
 
 const FitBotChat = ({ userId }) => {
