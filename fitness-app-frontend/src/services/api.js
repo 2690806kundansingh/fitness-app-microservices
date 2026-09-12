@@ -1,13 +1,24 @@
 import axios from "axios";
 
-const defaultApiUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    ? 'https://patient-procedures-nutrition-retirement.trycloudflare.com/api'
-    : 'http://localhost:8085/api';
+// Smart API URL Detection:
+// If running on an external host (e.g. *.vercel.app on mobile or laptop),
+// NEVER use localhost (which fails on phones). Use the live Cloudflare HTTPS tunnel.
+const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
+let resolvedApiUrl = 'https://patient-procedures-nutrition-retirement.trycloudflare.com/api';
+
+if (isLocalhost) {
+    resolvedApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8085/api';
+} else if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost') && !import.meta.env.VITE_API_URL.includes('127.0.0.1')) {
+    resolvedApiUrl = import.meta.env.VITE_API_URL;
+}
+
+const API_URL = resolvedApiUrl;
 
 const api = axios.create({
-    baseURL: API_URL
+    baseURL: API_URL,
+    timeout: 60000 // 60 seconds timeout for AI generation
 });
 
 // Helper to decode JWT payload safely
@@ -151,8 +162,8 @@ export const getActivityDetail = (id) => api.get(`/activities/${id}`);
 export const addActivity = (activity) => api.post('/activities', activity);
 
 // AI Coach & Generator
-export const askAICoach = (data) => api.post('/recommendations/coach', data);
-export const generateWorkoutPlan = (data) => api.post('/recommendations/plan', data);
+export const askAICoach = (data) => api.post('/recommendations/coach', data, { timeout: 75000 });
+export const generateWorkoutPlan = (data) => api.post('/recommendations/plan', data, { timeout: 75000 });
 
 // User Profile & Onboarding
 export const getUserProfile = (userId) => {
