@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd fitness-app-frontend && npm install && npm run build",
+  "outputDirectory": "fitness-app-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
