@@ -223,7 +223,7 @@ const ActivityList = ({ refreshTrigger }) => {
                         {activity.type}
                       </Typography>
                     </Stack>
-                    <Chip label="Details &rarr;" size="small" variant="outlined" sx={{ fontWeight: 600, fontSize: '0.75rem', borderColor: meta.border, color: meta.color }} />
+                    <Chip label="🤖 AI Guide &rarr;" size="small" color="primary" sx={{ fontWeight: 700, fontSize: '0.75rem' }} />
                   </Box>
 
                   <CardContent sx={{ p: 2 }}>
@@ -251,11 +251,9 @@ const ActivityList = ({ refreshTrigger }) => {
                       <Typography variant="caption" color="text.secondary">
                         ⚡ {burnRate} kcal/min
                       </Typography>
-                      {activity.createdAt && (
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(activity.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </Typography>
-                      )}
+                      <Typography variant="caption" sx={{ color: '#2563eb', fontWeight: 700 }}>
+                        View AI Guide &rarr;
+                      </Typography>
                     </Stack>
                   </CardContent>
                 </CardActionArea>

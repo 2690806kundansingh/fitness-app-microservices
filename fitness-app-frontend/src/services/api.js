@@ -29,7 +29,7 @@ export const getGatewayUrl = () => {
     if (savedCustom) return savedCustom;
 
     // 2. Vite environment variable (if valid and not broken trycloudflare domain)
-    const envUrl = import.meta.env.VITE_API_URL;
+    const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL);
     if (envUrl && !envUrl.includes('patient-procedures-nutrition-retirement')) {
         return envUrl;
     }
@@ -358,38 +358,62 @@ const generateSportsScienceRecommendation = (activity) => {
     const type = (activity.type || 'RUNNING').toUpperCase();
     const duration = Number(activity.duration) || 30;
     const calories = Number(activity.caloriesBurned) || 300;
-    const burnRate = (calories / duration).toFixed(1);
+    const burnRate = duration > 0 ? (calories / duration).toFixed(1) : '0.0';
 
     let paceInfo = '';
     let heartRateInfo = '';
-    let tips = [];
-    let recovery = '';
+    let improvements = [];
+    let suggestions = [];
+    let safety = [];
 
     if (type === 'RUNNING') {
         const estDist = (duration * 0.15).toFixed(1);
-        paceInfo = `Calculated estimated speed: ${(duration / Number(estDist)).toFixed(2)} min/km. Solid aerobic cadence maintained.`;
+        const estPace = estDist > 0 ? (duration / Number(estDist)).toFixed(2) : '6.00';
+        paceInfo = `Calculated estimated speed: ${estPace} min/km over ~${estDist} km. Solid aerobic cadence maintained.`;
         heartRateInfo = `Target Zone 3 (Aerobic Conditioning: 140-160 BPM). Energy metabolic efficiency: ${burnRate} kcal/min.`;
-        tips = [
-            'Maintain a forward pelvic tilt and land with mid-foot striking under your center of mass to reduce knee shock.',
-            'Keep cadence around 165-175 SPM (steps per minute) to optimize running economy and reduce fatigue.'
+        improvements = [
+            'Form & Mechanics: Maintain a slight forward pelvic tilt and land with mid-foot striking under your center of mass to reduce knee shock.',
+            'Cadence Optimization: Keep cadence around 165-175 SPM (steps per minute) to optimize running economy and reduce muscle fatigue.'
         ];
-        recovery = 'Hydrate with 500ml electrolyte water within 30 mins. 24 hours of rest or active mobility recommended before your next high-intensity tempo run.';
+        suggestions = [
+            'Progression Interval: Next session, try 5 x 2-minute tempo intervals at 85% effort with 90 seconds light jogging recovery.',
+            'Aerobic Base Run: Schedule a 40-minute conversational pace run in 2 days to build mitochondrial volume.'
+        ];
+        safety = [
+            'Hydration Protocol: Rehydrate with 500ml electrolyte water within 30 minutes post-session.',
+            'Orthopedic Protection: Replace running shoes after 500-700km to preserve cushioning and prevent shin splints.',
+            'Recovery Window: Allow 24 hours before your next high-intensity or threshold workout.'
+        ];
     } else if (type === 'CYCLING') {
-        paceInfo = `Cadence recommended between 80-90 RPM. Output rate: ${burnRate} kcal/min.`;
+        paceInfo = `Cadence recommended between 80-90 RPM. Output metabolic rate: ${burnRate} kcal/min.`;
         heartRateInfo = 'Predominant Zone 2/3 cardiovascular engagement. Excellent low-impact joint development.';
-        tips = [
-            'Engage your glutes and hamstrings on the upstroke of the pedal stroke for even power distribution.',
-            'Adjust saddle height so your knee has a gentle 25-30 degree bend at the bottom of the pedal rotation.'
+        improvements = [
+            'Pedal Stroke Efficiency: Engage glutes and hamstrings on the upstroke of each rotation for balanced power delivery.',
+            'Ergonomic Bike Fit: Adjust saddle height so your knee has a gentle 25-30 degree flexion at bottom dead center.'
         ];
-        recovery = 'Target 30g fast-acting carbohydrates with 15g protein. Light quadriceps and hip-flexor foam rolling.';
+        suggestions = [
+            'Hill Climb Cadence Surge: In your next ride, incorporate 4 x 3-minute seated hill climbs at 75-80 RPM.',
+            'Zone 2 Recovery Spin: Tomorrow complete a 30-minute high-cadence low-resistance spin to flush lactate.'
+        ];
+        safety = [
+            'Post-Ride Nutrition: Target 30g fast-acting carbohydrates paired with 20g protein within 45 minutes.',
+            'Myofascial Release: Foam roll quadriceps, IT bands, and hip flexors for 5 minutes post-ride.'
+        ];
     } else {
-        paceInfo = `Brisk brisk tempo achieved with low orthopedic load. Burn efficiency: ${burnRate} kcal/min.`;
-        heartRateInfo = 'Zone 1-2 active recovery and metabolic baseline elevation (100-125 BPM).';
-        tips = [
-            'Swing arms gently in opposition to stride to recruit upper-body core stabilizers.',
-            'Progress toward 10,000 daily steps to optimize insulin sensitivity and resting metabolic rate.'
+        paceInfo = `Brisk athletic tempo achieved with minimal orthopedic load. Energy rate: ${burnRate} kcal/min.`;
+        heartRateInfo = 'Zone 1-2 active recovery and basal metabolic elevation (100-125 BPM).';
+        improvements = [
+            'Core & Arm Drive: Swing arms actively in opposition to stride to engage upper-body posture stabilizers.',
+            'Stride & Posture: Keep eyes forward on the horizon and chest open for optimal diaphragm oxygen intake.'
         ];
-        recovery = 'Gentle calf stretches and steady hydration. Safe to repeat daily!';
+        suggestions = [
+            'Incline Walk Progression: Add 5-8% treadmill incline or an uphill route on your next 35-minute walk.',
+            'Step Count Milestone: Work toward 10,000 daily steps to enhance insulin sensitivity and resting metabolic rate.'
+        ];
+        safety = [
+            'Hydration: Drink 300-400ml water immediately after walking.',
+            'Safe Daily Consistency: Walking has very low injury risk and can safely be performed 6-7 days per week!'
+        ];
     }
 
     const recommendationText = `Overall: Exceptional ${type.toLowerCase()} session! Completed ${duration} minutes burning ${calories} kcal (${burnRate} kcal/min). Pace: ${paceInfo} Heart Rate: ${heartRateInfo} Calories: High metabolic burn with balanced glycogen depletion.`;
@@ -397,9 +421,12 @@ const generateSportsScienceRecommendation = (activity) => {
     return {
         id: 'rec-' + (activity.id || Date.now()),
         activityId: activity.id,
+        userId: activity.userId || 'd8b1ab4e-f241-4bcf-8352-0d2fcbda134c',
+        activityType: type,
         recommendation: recommendationText,
-        improvements: tips.join(' | '),
-        recoveryTips: recovery,
+        improvements,
+        suggestions,
+        safety,
         createdAt: new Date().toISOString(),
         isLocalGenerated: true
     };
@@ -459,7 +486,27 @@ export const getActivityRecommendation = async (id) => {
         const key = `fitpulse_rec_${id}`;
         const storedRec = localStorage.getItem(key);
         if (storedRec) {
-            return { data: JSON.parse(storedRec), isOfflineFallback: true };
+            try {
+                const parsed = JSON.parse(storedRec);
+                if (typeof parsed.improvements === 'string') {
+                    parsed.improvements = parsed.improvements.split('|').map(s => s.trim()).filter(Boolean);
+                }
+                if (!Array.isArray(parsed.suggestions)) {
+                    parsed.suggestions = [
+                        'Progression: Increase session duration by 10% next week.',
+                        'Active Recovery: Schedule gentle mobility or foam rolling tomorrow.'
+                    ];
+                }
+                if (!Array.isArray(parsed.safety)) {
+                    parsed.safety = [
+                        'Hydration: Rehydrate with electrolyte water within 30 minutes.',
+                        'Recovery: Allow 24 hours of rest before high-intensity efforts.'
+                    ];
+                }
+                return { data: parsed, isOfflineFallback: true };
+            } catch {
+                // fall through
+            }
         }
         // Synthesize dynamic sports science recommendation
         const cached = getLocalActivities();
@@ -573,41 +620,62 @@ export const askAICoach = async (data) => {
         const res = await api.post('/recommendations/coach', data, { timeout: 60000 });
         return res;
     } catch {
-        // High quality athletic AI response synthesis
         const q = (data.question || '').toLowerCase();
-        let answer = '';
+        let headline = '';
+        let explanation = '';
+        let actionableTips = [];
+        let recommendedWorkout = '';
+        let nutritionOrRecoveryTip = '';
 
         if (q.includes('zone 2') || q.includes('fat loss')) {
-            answer = `### 🏃‍♂️ Zone 2 Aerobic Optimization Protocol
-**Scientific Mechanism:** Zone 2 training keeps your blood lactate concentration between 1.5 - 2.0 mmol/L, maximizing fatty acid oxidation through mitochondrial biogenesis.
-
-1. **Target Heart Rate:** Calculate your HR zone: \`(220 - Age) * 0.65 to 0.75\`. You should be able to hold a full conversation without gasping for breath.
-2. **Weekly Volume:** 3 to 4 sessions of 45-60 minutes produces exponential improvements in aerobic base.
-3. **MNC Tip:** Do not push into Zone 3 ("the grey zone") during dedicated aerobic recovery days!`;
+            headline = 'Zone 2 training (65-75% max HR) is the gold standard for mitochondrial density and fatty acid oxidation.';
+            explanation = 'Zone 2 keeps blood lactate concentration between 1.5 - 2.0 mmol/L. At this metabolic intensity, type I slow-twitch muscle fibers utilize oxygen to oxidize fatty acids for ATP production, sparing glycogen stores and elevating base cardiovascular efficiency.';
+            actionableTips = [
+                'Target Heart Rate: Maintain (220 - Age) * 0.65 to 0.75 BPM throughout the entire session.',
+                'Conversational Rhythm: You should be able to speak complete sentences comfortably without gasping.',
+                'Weekly Volume: 3 to 4 sessions of 45-60 minutes produces maximal aerobic adaptations.'
+            ];
+            recommendedWorkout = '45-minute steady-state conversational pace run or low-resistance cycling session in Zone 2.';
+            nutritionOrRecoveryTip = 'Consume 300-400ml electrolyte water before beginning; avoid fast-acting sugars immediately before Zone 2 to preserve lipolysis.';
         } else if (q.includes('eat') || q.includes('food') || q.includes('diet') || q.includes('protein')) {
-            answer = `### 🥗 Pre- & Post-Workout Fueling Strategy
-1. **45-60 Min Pre-Workout:** Consume 30-40g of easily digestible carbohydrates with minimal fat and fiber (e.g., banana with 1 slice sourdough, or oatmeal with honey).
-2. **Hydration:** Drink 400-500ml water with a pinch of pink Himalayan salt for sodium retention.
-3. **Post-Workout (The Anabolic Window):** 25-35g fast-absorbing whey or plant protein paired with 40-50g complex carbs to replenish muscle glycogen stores.`;
+            headline = 'Strategic nutrient timing accelerates muscle protein synthesis and glycogen replenishment.';
+            explanation = 'Consuming easily digestible complex carbohydrates 45-60 minutes prior to training ensures elevated liver and muscle glycogen availability. Post-workout protein intake triggers the mTOR signaling pathway to repair micro-trauma in muscle fibers.';
+            actionableTips = [
+                'Pre-Workout Fuel (45 min before): 30-40g low-fiber carbs (e.g. banana with oatmeal or sourdough with honey).',
+                'Hydration Pre-load: Drink 400-500ml water with a pinch of mineral salt 30 minutes before exercise.',
+                'Anabolic Recovery Window: 25-35g fast-absorbing protein paired with 40-50g complex carbohydrates.'
+            ];
+            recommendedWorkout = 'Pair your fueling with a 35-minute progressive endurance session to maximize nutrient utilization.';
+            nutritionOrRecoveryTip = 'Target 1.6 to 2.2g of protein per kg of body weight daily spread evenly across 4 meals.';
         } else if (q.includes('cadence') || q.includes('cycling') || q.includes('rpm') || q.includes('run')) {
-            answer = `### 🚴‍♂️ Biomechanical Cadence Optimization
-1. **Cycling Target:** Aim for **85-95 RPM**. Lower cadences (<70 RPM) place excessive torque on knee patellofemoral tendons, whereas higher cadences shift the load safely to the cardiovascular system.
-2. **Running Cadence:** Target **165-175 SPM**. Focus on shortening your stride rather than taking faster giant leaps.`;
+            headline = 'Optimizing cadence reduces musculoskeletal torque and transfers workload safely to your cardiovascular system.';
+            explanation = 'Low cycling cadences (<70 RPM) or overstriding in running (<160 SPM) place high shear stress on knee patellar tendons. Maintaining optimal cadence significantly improves running economy and reduces fatigue.';
+            actionableTips = [
+                'Cycling Target Cadence: Aim for 85-95 RPM using lighter gear ratios rather than high-torque mashing.',
+                'Running Stride Frequency: Target 165-175 SPM by shortening your stride and landing beneath your pelvis.',
+                'Interval Cadence Drills: Alternate 1 minute at 95+ RPM with 2 minutes at comfortable baseline cadence.'
+            ];
+            recommendedWorkout = '30-minute session: 10 min warm-up + 6 x (1 min at 95 RPM / 2 min at 85 RPM) + 5 min cooldown.';
+            nutritionOrRecoveryTip = 'Perform gentle quadriceps and calf stretches post-workout to relieve patellar tendon tension.';
         } else {
-            answer = `### ⚡ FitPulse Athletic Coach Recommendation
-**Goal Analysis (${data.goal || 'General Fitness'} | ${data.fitnessLevel || 'Intermediate'}):**
-1. **Progressive Overload:** Increase training volume by no more than 8-10% weekly to prevent overuse injury.
-2. **Hydration Benchmark:** Target 35-40ml of water per kg of body weight daily.
-3. **Recovery Focus:** Sleep is your #1 performance enhancer—aim for 7.5 to 8.5 hours with consistent sleep/wake timing.
-
-*(Note: Operating in Resilient AI Mode. Connect API Gateway for live Google Gemini streaming).*`;
+            headline = `Consistency, progressive overload, and recovery are the 3 pillars for ${data.goal || 'General Fitness'}.`;
+            explanation = `For an athlete at the ${data.fitnessLevel || 'Intermediate'} level, steady incremental volume increases (8-10% weekly) yield sustainable cardiovascular and muscular adaptations while keeping injury risk low.`;
+            actionableTips = [
+                'Progressive Overload: Increase duration or resistance by no more than 10% per week.',
+                'Daily Hydration Benchmark: Drink 35-40ml of water per kg of body weight daily.',
+                'Sleep Architecture: Prioritize 7.5 to 8.5 hours of quality sleep for peak growth hormone release.'
+            ];
+            recommendedWorkout = '40-minute balanced workout: 10 min dynamic mobility + 25 min steady aerobic training + 5 min cooldown.';
+            nutritionOrRecoveryTip = 'Ensure 20-30g of high quality protein within 1 hour post-workout to optimize muscle tissue repair.';
         }
 
         return {
             data: {
-                answer,
-                goal: data.goal,
-                level: data.fitnessLevel,
+                headline,
+                explanation,
+                actionableTips,
+                recommendedWorkout,
+                nutritionOrRecoveryTip,
                 timestamp: new Date().toISOString(),
                 isLocalFallback: true
             }
@@ -620,28 +688,77 @@ export const generateWorkoutPlan = async (data) => {
         const res = await api.post('/recommendations/plan', data, { timeout: 70000 });
         return res;
     } catch {
-        const goal = data.goal || 'Endurance & Conditioning';
-        const days = data.days || 4;
-        const dur = data.duration || 45;
+        const goal = data.goal || 'Fat Loss & Aerobic Conditioning';
+        const days = Number(data.daysPerWeek || data.days || 4);
+        const dur = Number(data.sessionMinutes || data.duration || 40);
+        const level = data.fitnessLevel || 'Intermediate';
 
-        const schedule = [
-            { day: 'Day 1: Monday', title: 'Aerobic Base Foundation', detail: `${dur} min steady-state Zone 2 (Running or Cycling) at 65-75% max HR.` },
-            { day: 'Day 2: Tuesday', title: 'Lower Body Strength & Core', detail: 'Squats, Romanian Deadlifts, Walking Lunges, Planks (3 sets of 10-12 reps).' },
-            { day: 'Day 3: Wednesday', title: 'Active Recovery & Mobility', detail: '30 min brisk walk, hip openers, thoracic spine rotations, gentle foam rolling.' },
-            { day: 'Day 4: Thursday', title: 'Threshold Intervals (HIIT/Tempo)', detail: `10 min warm-up + 5x (3 min Zone 4 / 2 min Zone 1 recovery) + 5 min cool-down (${dur} min total).` },
-            { day: 'Day 5: Friday', title: 'Upper Body & Posterior Chain', detail: 'Pull-ups/Lat pulldowns, Push-ups, Overhead press, Face pulls.' },
-            { day: 'Day 6: Saturday', title: 'Weekend Long Endurance Session', detail: '60 min low-intensity outdoor cycling or trail hiking.' },
-            { day: 'Day 7: Sunday', title: 'Full Rest & Restoration', detail: 'Full physical rest, hydration focus (3L water), high-protein nutrition.' }
-        ].slice(0, days);
+        const scheduleTemplates = [
+            {
+                day: 'Day 1',
+                duration: dur,
+                focus: 'Aerobic Base Foundation',
+                activityType: 'RUNNING',
+                intensity: 'Moderate (Zone 2)',
+                warmup: '5 min dynamic leg swings, high knees, and light jog',
+                mainSet: `${dur - 10} min steady conversational pace effort at 65-75% max HR`,
+                cooldown: '5 min walking deceleration and calf/hamstring stretching'
+            },
+            {
+                day: 'Day 2',
+                duration: dur,
+                focus: 'High-Intensity Cadence Intervals',
+                activityType: 'CYCLING',
+                intensity: 'High (Zone 4)',
+                warmup: '8 min progressive cadence spin at 80-85 RPM',
+                mainSet: '6 rounds of: 2 min hard effort at 95+ RPM + 2 min easy recovery spin',
+                cooldown: '6 min low-resistance flush spin and quad stretching'
+            },
+            {
+                day: 'Day 3',
+                duration: Math.max(dur - 10, 25),
+                focus: 'Active Mobility & Structural Recovery',
+                activityType: 'WALKING',
+                intensity: 'Low (Zone 1)',
+                warmup: '5 min arm circles, hip openers, and ankle rotations',
+                mainSet: `${Math.max(dur - 15, 20)} min brisk outdoor walk maintaining good posture`,
+                cooldown: '5 min full-body myofascial foam rolling'
+            },
+            {
+                day: 'Day 4',
+                duration: dur,
+                focus: 'Lactate Threshold Progression',
+                activityType: 'RUNNING',
+                intensity: 'Challenging (Zone 3/4)',
+                warmup: '8 min easy jog + 4 x 20-second dynamic strides',
+                mainSet: '3 x 8 min at comfortably hard tempo pace with 2 min walking rest',
+                cooldown: '6 min easy cool-down jog and lower body stretches'
+            },
+            {
+                day: 'Day 5',
+                duration: dur + 10,
+                focus: 'Endurance Volume & Stamina',
+                activityType: 'CYCLING',
+                intensity: 'Moderate (Zone 2)',
+                warmup: '10 min easy gear spin',
+                mainSet: `${dur - 5} min continuous Zone 2 cycling building cardiovascular endurance`,
+                cooldown: '5 min easy spin and hip flexor stretches'
+            }
+        ];
+
+        const weeklySchedule = scheduleTemplates.slice(0, days);
 
         return {
             data: {
-                title: `${days}-Day Personalized Athletic Plan`,
-                goal,
-                durationPerSession: `${dur} minutes`,
-                fitnessLevel: data.fitnessLevel || 'Intermediate',
-                schedule,
-                coachingNotes: 'Designed with progressive cardiovascular adaptation and joint preservation.',
+                planTitle: `${days}-Day ${goal} Blueprint`,
+                overview: `Scientifically periodized ${days}-day regimen tailored for ${level} athletes. Designed to systematically build aerobic capacity, optimize caloric burn, and preserve musculoskeletal health.`,
+                targetHeartRateZones: 'Zone 2 (65-75% Max HR) on Foundation days; Zone 4 (85-90% Max HR) during Interval surges.',
+                weeklySchedule,
+                progressionTips: [
+                    'Increase total weekly volume by no more than 8-10% to prevent overtraining syndrome.',
+                    'Prioritize 7.5 to 8.5 hours of sleep each night for peak neuromuscular recovery.',
+                    'Ensure protein intake is 1.6 - 2.0g per kg of body weight to support tissue adaptation.'
+                ],
                 isLocalFallback: true
             }
         };
@@ -914,7 +1031,7 @@ export const deleteNotification = async (id) => {
 // 10. KEYCLOAK DIRECT AUTH & HEALTH SERVICE
 // ============================================================================
 
-export const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || 'https://keycloak-production-abf4.up.railway.app/realms/fitness-oauth2';
+export const KEYCLOAK_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_KEYCLOAK_URL) || 'https://keycloak-production-abf4.up.railway.app/realms/fitness-oauth2';
 
 export const checkKeycloakHealth = async () => {
     try {

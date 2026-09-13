@@ -207,6 +207,18 @@ const ActivityDetail = () => {
   const burnRate = activity.duration > 0 ? (activity.caloriesBurned / activity.duration).toFixed(1) : 0;
   const parsedSections = recommendation ? parseAnalysisSections(recommendation.recommendation) : [];
 
+  const getArrayField = (field) => {
+    if (Array.isArray(field)) return field;
+    if (typeof field === 'string' && field.trim().length > 0) {
+      return field.split('|').map((s) => s.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  const improvementsList = getArrayField(recommendation?.improvements);
+  const suggestionsList = getArrayField(recommendation?.suggestions);
+  const safetyList = getArrayField(recommendation?.safety);
+
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', p: { xs: 1.5, sm: 3 }, pb: 6 }}>
       {/* Top Action Bar */}
@@ -429,14 +441,14 @@ const ActivityDetail = () => {
               <Divider sx={{ borderColor: '#e2e8f0' }} />
 
               {/* 2. Targeted Improvements Section */}
-              {recommendation.improvements && recommendation.improvements.length > 0 && (
+              {improvementsList.length > 0 && (
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                     🎯 Targeted Performance Improvements
                   </Typography>
 
                   <Stack spacing={2}>
-                    {recommendation.improvements.map((item, index) => {
+                    {improvementsList.map((item, index) => {
                       const { title, detail } = splitColonItem(item);
                       return (
                         <Paper
@@ -477,7 +489,7 @@ const ActivityDetail = () => {
               )}
 
               {/* 3. Next Workout Suggestions Section */}
-              {recommendation.suggestions && recommendation.suggestions.length > 0 && (
+              {suggestionsList.length > 0 && (
                 <Box>
                   <Divider sx={{ borderColor: '#e2e8f0', mb: 3 }} />
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -485,7 +497,7 @@ const ActivityDetail = () => {
                   </Typography>
 
                   <Grid2 container spacing={2}>
-                    {recommendation.suggestions.map((item, index) => {
+                    {suggestionsList.map((item, index) => {
                       const { title, detail } = splitColonItem(item);
                       return (
                         <Grid2 size={{ xs: 12, sm: 6 }} key={index}>
@@ -516,7 +528,7 @@ const ActivityDetail = () => {
               )}
 
               {/* 4. Safety & Recovery Guidelines Section */}
-              {recommendation.safety && recommendation.safety.length > 0 && (
+              {safetyList.length > 0 && (
                 <Box>
                   <Divider sx={{ borderColor: '#e2e8f0', mb: 3 }} />
                   <Paper
@@ -532,7 +544,7 @@ const ActivityDetail = () => {
                       🛡️ Safety, Mobility & Recovery Guidelines
                     </Typography>
                     <Stack spacing={1.2}>
-                      {recommendation.safety.map((safetyItem, index) => (
+                      {safetyList.map((safetyItem, index) => (
                         <Typography key={index} variant="body2" sx={{ color: '#713f12', lineHeight: 1.55, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                           <span style={{ color: '#ca8a04', fontWeight: 'bold' }}>✓</span>
                           <span>{safetyItem}</span>

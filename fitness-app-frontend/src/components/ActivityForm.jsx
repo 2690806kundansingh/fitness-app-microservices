@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Alert,
   Box,
@@ -19,6 +20,7 @@ import {
 import { addActivity } from '../services/api';
 
 const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
+  const navigate = useNavigate();
   const [activity, setActivity] = useState({
     type: 'RUNNING',
     duration: '',
@@ -54,11 +56,7 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
         additionalMetrics: activity.additionalMetrics || {}
       });
       setSuccess(true);
-      if (res?.isOfflineFallback) {
-        setSuccessMessage('🎉 Workout logged to device storage & AI sports science insights generated! (Saved offline - will sync when API Gateway connects)');
-      } else {
-        setSuccessMessage('🎉 Workout logged successfully! Your AI coach is analyzing your session.');
-      }
+      setSuccessMessage('🎉 Workout logged! Opening your personalized Gemini AI Coaching Guide...');
       setActivity({ type: 'RUNNING', duration: '', caloriesBurned: '', additionalMetrics: {} });
 
       if (typeof onActivityAdded === 'function') {
@@ -68,7 +66,14 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
         onActivitiesAdded();
       }
 
-      setTimeout(() => setSuccess(false), 5000);
+      const newId = res?.data?.id;
+      if (newId) {
+        setTimeout(() => {
+          navigate(`/activities/${newId}`);
+        }, 500);
+      } else {
+        setTimeout(() => setSuccess(false), 5000);
+      }
     } catch (err) {
       console.error('Failed to add activity:', err);
       setError(err?.response?.data?.message || err?.message || 'Failed to add activity. Please check values.');
