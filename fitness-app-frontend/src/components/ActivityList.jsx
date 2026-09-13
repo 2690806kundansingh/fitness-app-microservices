@@ -14,7 +14,7 @@ import {
   Typography
 } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { getActivities, ensureValidToken } from '../services/api';
+import { getActivities, getLocalActivities, ensureValidToken } from '../services/api';
 
 const getActivityMeta = (type) => {
   switch (type?.toUpperCase()) {
@@ -32,6 +32,7 @@ const getActivityMeta = (type) => {
 const ActivityList = ({ refreshTrigger }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -40,24 +41,17 @@ const ActivityList = ({ refreshTrigger }) => {
     setError(null);
     try {
       const response = await getActivities();
-      const list = response.data || [];
-      // Sort newest first
+      const rawList = Array.isArray(response?.data) ? response.data : (response?.data ? [response.data] : []);
+      setIsOffline(Boolean(response?.isOfflineFallback));
+      const list = [...rawList];
       list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       setActivities(list);
     } catch (err) {
-      console.error('Failed to fetch activities, attempting auto-reconnect:', err);
-      try {
-        await ensureValidToken();
-        const retryRes = await getActivities();
-        const retryList = retryRes.data || [];
-        retryList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-        setActivities(retryList);
-        setError(null);
-        return;
-      } catch (retryErr) {
-        console.error('Auto-reconnect also failed:', retryErr);
-        setError('Unable to load activities. Please check your connection or click Retry.');
-      }
+      console.warn('Fallback to local activities cache:', err);
+      const fallbackList = getLocalActivities();
+      setActivities(fallbackList);
+      setIsOffline(true);
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -78,7 +72,7 @@ const ActivityList = ({ refreshTrigger }) => {
     );
   }
 
-  if (error) {
+  if (error && activities.length === 0) {
     return (
       <Alert
         severity="warning"
@@ -128,6 +122,23 @@ const ActivityList = ({ refreshTrigger }) => {
 
   return (
     <Box sx={{ mt: 2 }}>
+      {isOffline && (
+        <Alert
+          severity="info"
+          icon={<span style={{ fontSize: '1.1rem' }}>⚡</span>}
+          sx={{
+            mb: 2.5,
+            borderRadius: 2.5,
+            bgcolor: '#f8fafc',
+            color: '#334155',
+            border: '1px solid #e2e8f0',
+            fontWeight: 500
+          }}
+        >
+          <strong>Resilient Offline Mode:</strong> Showing workouts saved on this device. When your API Gateway or Cloudflare tunnel connects, workouts automatically synchronize.
+        </Alert>
+      )}
+
       {/* Overview Stats Bar */}
       <Paper
         elevation={0}

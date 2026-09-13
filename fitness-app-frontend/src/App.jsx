@@ -41,13 +41,16 @@ import FitBotChat from './components/FitBotChat';
 import NotificationCenter from './components/NotificationCenter';
 import AppGuide from './components/AppGuide';
 import BeginnerPlan from './components/BeginnerPlan';
+import GatewayConnectionModal from './components/GatewayConnectionModal';
 import {
   getUserProfile,
   checkKeycloakHealth,
   loginWithKeycloakDirect,
   ensureValidToken,
   decodeJwt,
-  createDemoUserSession
+  createDemoUserSession,
+  getConnectionStatus,
+  subscribeConnectionStatus
 } from './services/api';
 
 const theme = createTheme({
@@ -106,11 +109,19 @@ const NAV_ITEMS = [
   { label: 'User Guide', path: '/guide', icon: '📖' }
 ];
 
-const NavigationHeader = ({ user, onLogout }) => {
+const NavigationHeader = ({ user, onLogout, onOpenGatewayModal }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const userName = user?.preferred_username || user?.name || user?.email || 'User';
   const userId = user?.sub || localStorage.getItem('userId');
+  const [connStatus, setConnStatus] = useState(getConnectionStatus());
+
+  useEffect(() => {
+    const unsub = subscribeConnectionStatus((status) => {
+      setConnStatus(status);
+    });
+    return unsub;
+  }, []);
 
   // Mobile menu anchor
   const [anchorEl, setAnchorEl] = useState(null);
@@ -190,8 +201,27 @@ const NavigationHeader = ({ user, onLogout }) => {
             })}
           </Stack>
 
-          {/* User Controls */}
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          {/* User Controls & Gateway Status */}
+          <Stack direction="row" spacing={1.2} alignItems="center">
+            {/* Gateway Status Badge */}
+            <Chip
+              icon={<span style={{ fontSize: '0.85rem' }}>{connStatus === 'connected' ? '🟢' : '⚡'}</span>}
+              label={connStatus === 'connected' ? 'Live API' : 'Resilient Mode'}
+              size="small"
+              onClick={onOpenGatewayModal}
+              title="Click to configure API Gateway or Cloudflare Tunnel"
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                cursor: 'pointer',
+                bgcolor: connStatus === 'connected' ? '#ecfdf5' : '#fffbeb',
+                color: connStatus === 'connected' ? '#047857' : '#b45309',
+                border: '1px solid',
+                borderColor: connStatus === 'connected' ? '#a7f3d0' : '#fde68a',
+                '&:hover': { bgcolor: connStatus === 'connected' ? '#d1fae5' : '#fef3c7' }
+              }}
+            />
+
             {/* Notification Center */}
             <NotificationCenter userId={userId} />
 
@@ -209,6 +239,17 @@ const NavigationHeader = ({ user, onLogout }) => {
               onClose={handleCloseMenu}
               sx={{ display: { xs: 'block', md: 'none' } }}
             >
+              <MenuItem
+                onClick={() => {
+                  onOpenGatewayModal();
+                  handleCloseMenu();
+                }}
+                sx={{ color: '#2563eb', fontWeight: 700 }}
+              >
+                <span style={{ marginRight: 10 }}>⚙️</span>
+                Gateway & Tunnel Control
+              </MenuItem>
+              <Divider />
               {NAV_ITEMS.map((item) => (
                 <MenuItem
                   key={item.path}
@@ -248,7 +289,7 @@ const NavigationHeader = ({ user, onLogout }) => {
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
-                px: 2
+                px: { xs: 1.2, sm: 2 }
               }}
             >
               Log Out
@@ -257,6 +298,77 @@ const NavigationHeader = ({ user, onLogout }) => {
         </Toolbar>
       </Container>
     </AppBar>
+  );
+};
+
+const MOBILE_BOTTOM_ITEMS = [
+  { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+  { label: 'Workouts', path: '/activities', icon: '🏃' },
+  { label: 'AI Coach', path: '/ai-coach', icon: '🤖' },
+  { label: 'Check-in', path: '/daily-checkin', icon: '🔥' },
+  { label: 'Profile', path: '/profile', icon: '👤' }
+];
+
+const MobileBottomNav = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  return (
+    <Paper
+      elevation={4}
+      sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1100,
+        display: { xs: 'flex', md: 'none' },
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        py: 0.8,
+        px: 0.5,
+        bgcolor: '#ffffff',
+        borderTop: '1px solid #e2e8f0',
+        backdropFilter: 'blur(10px)',
+        background: 'rgba(255, 255, 255, 0.95)'
+      }}
+    >
+      {MOBILE_BOTTOM_ITEMS.map((item) => {
+        const isActive = location.pathname.startsWith(item.path);
+        return (
+          <Box
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 0.4,
+              cursor: 'pointer',
+              color: isActive ? '#2563eb' : '#64748b',
+              transition: 'all 0.15s ease',
+              '&:active': { transform: 'scale(0.92)' }
+            }}
+          >
+            <Typography sx={{ fontSize: '1.25rem', lineHeight: 1, mb: 0.3 }}>
+              {item.icon}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: isActive ? 700 : 500,
+                fontSize: '0.68rem',
+                letterSpacing: -0.2
+              }}
+            >
+              {item.label}
+            </Typography>
+          </Box>
+        );
+      })}
+    </Paper>
   );
 };
 
@@ -625,6 +737,7 @@ function App() {
   });
 
   const activeToken = token || directToken;
+  const [showGatewayModal, setShowGatewayModal] = useState(false);
   const activeUser = tokenData || directUser;
 
   const handleDirectLogin = (newToken, newUser, newRefreshToken) => {
@@ -700,8 +813,12 @@ function App() {
           <LoginPage onLogin={logIn} onDirectLogin={handleDirectLogin} />
         ) : (
           <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
-            <NavigationHeader user={activeUser} onLogout={handleLogout} />
-            <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 }, px: { xs: 1.5, sm: 3 }, flexGrow: 1 }}>
+            <NavigationHeader
+              user={activeUser}
+              onLogout={handleLogout}
+              onOpenGatewayModal={() => setShowGatewayModal(true)}
+            />
+            <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 11, md: 4 }, px: { xs: 1.5, sm: 3 }, flexGrow: 1 }}>
               <Routes>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/beginner-plan" element={<BeginnerPlan />} />
@@ -716,8 +833,17 @@ function App() {
               </Routes>
             </Container>
 
+            {/* Mobile Bottom Navigation for thumb reach on mobile */}
+            <MobileBottomNav />
+
             {/* Floating FitBot Assistant Widget */}
             <FitBotChat userId={currentUserId} />
+
+            {/* Gateway & Tunnel Control Modal */}
+            <GatewayConnectionModal
+              open={showGatewayModal}
+              onClose={() => setShowGatewayModal(false)}
+            />
 
             {/* New User Profile Onboarding Modal */}
             <OnboardingModal

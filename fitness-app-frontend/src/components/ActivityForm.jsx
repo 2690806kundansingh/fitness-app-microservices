@@ -28,6 +28,7 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,13 +47,18 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
     setSuccess(false);
 
     try {
-      await addActivity({
+      const res = await addActivity({
         type: activity.type,
         duration: Number(activity.duration),
         caloriesBurned: Number(activity.caloriesBurned),
         additionalMetrics: activity.additionalMetrics || {}
       });
       setSuccess(true);
+      if (res?.isOfflineFallback) {
+        setSuccessMessage('🎉 Workout logged to device storage & AI sports science insights generated! (Saved offline - will sync when API Gateway connects)');
+      } else {
+        setSuccessMessage('🎉 Workout logged successfully! Your AI coach is analyzing your session.');
+      }
       setActivity({ type: 'RUNNING', duration: '', caloriesBurned: '', additionalMetrics: {} });
 
       if (typeof onActivityAdded === 'function') {
@@ -62,10 +68,10 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
         onActivitiesAdded();
       }
 
-      setTimeout(() => setSuccess(false), 4000);
+      setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
       console.error('Failed to add activity:', err);
-      setError(err?.response?.data?.message || err?.message || 'Failed to add activity. Please try again.');
+      setError(err?.response?.data?.message || err?.message || 'Failed to add activity. Please check values.');
     } finally {
       setLoading(false);
     }
@@ -91,7 +97,7 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
           )}
           {success && (
             <Alert severity="success" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setSuccess(false)}>
-              Workout logged successfully! Your AI coach is analyzing your session.
+              {successMessage}
             </Alert>
           )}
 
@@ -125,7 +131,7 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
                 slotProps={{
                   input: {
                     endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                    inputProps: { min: 1, max: 1440 }
+                    inputProps: { min: 1, max: 1440, inputMode: 'numeric', pattern: '[0-9]*' }
                   }
                 }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
@@ -144,7 +150,7 @@ const ActivityForm = ({ onActivityAdded, onActivitiesAdded }) => {
                 slotProps={{
                   input: {
                     endAdornment: <InputAdornment position="end">kcal</InputAdornment>,
-                    inputProps: { min: 1, max: 50000 }
+                    inputProps: { min: 1, max: 50000, inputMode: 'numeric', pattern: '[0-9]*' }
                   }
                 }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
